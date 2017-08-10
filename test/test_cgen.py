@@ -1,12 +1,25 @@
 from cgen import (
         POD, Struct, FunctionBody, FunctionDeclaration,
         For, If, Assign, Value, Block, ArrayOf, Comment,
-        Template)
+        Template, Union)
 import numpy as np
 
 
 def test_cgen():
     s = Struct("yuck", [
+        POD(np.float32, "h", ),
+        POD(np.float32, "order"),
+        POD(np.float32, "face_jacobian"),
+        ArrayOf(POD(np.float32, "normal"), 17),
+        POD(np.uint16, "a_base"),
+        POD(np.uint16, "b_base"),
+        #CudaGlobal(POD(np.uint8, "a_ilist_number")),
+        POD(np.uint8, "b_ilist_number"),
+        POD(np.uint8, "bdry_flux_number"),  # 0 if not on boundary
+        POD(np.uint8, "reserved"),
+        POD(np.uint32, "b_global_base"),
+        ])
+    u = Union("yuck", [
         POD(np.float32, "h", ),
         POD(np.float32, "order"),
         POD(np.float32, "face_jacobian"),
@@ -44,5 +57,6 @@ def test_cgen():
                                            Value('int', 'length')]))
 
     print(s)
+    print(u)
     print(f_body)
     print(t_decl)

@@ -413,6 +413,25 @@ class Struct(Declarator):
     mapper_method = "map_struct"
 
 
+class Union(Struct):
+    """A union declarator."""
+
+    def get_decl_pair(self):
+        def get_tp():
+            if self.tpname is not None:
+                yield "union %s" % self.tpname
+            else:
+                yield "union"
+            yield "{"
+            for f in self.fields:
+                for f_line in f.generate():
+                    yield "  " + f_line
+            if self.pad_bytes:
+                yield "  unsigned char _cgen_pad[%d];" % self.pad_bytes
+            yield "} " + self.struct_attributes()
+        return get_tp(), self.declname
+
+
 class GenerableStruct(Struct):
     def __init__(self, tpname, fields, declname=None,
             align_bytes=None, aligned_prime_to=[]):
@@ -455,7 +474,8 @@ class GenerableStruct(Struct):
         while not satisfies_primality(padded_bytes // align_bytes):
             padded_bytes += align_bytes
 
-        Struct.__init__(self, tpname, fields, declname, padded_bytes - bytes)
+        self.get_init().__init__(
+            self, tpname, fields, declname, padded_bytes - bytes)
 
         if self.pad_bytes:
             self.format = format + "%dx" % self.pad_bytes
@@ -465,6 +485,9 @@ class GenerableStruct(Struct):
             self.bytes = bytes
 
         assert _struct.calcsize(self.format) == self.bytes
+
+    def get_init(self):
+        return Struct
 
     # until nvcc bug is fixed
     #def struct_attributes(self):
@@ -514,6 +537,11 @@ class GenerableStruct(Struct):
         return self.bytes
 
     mapper_method = "map_generable_struct"
+
+
+class GenerableUnion(Union, GenerableStruct):
+    def get_init(self):
+        return Union
 
 
 class Enum(Generable):
